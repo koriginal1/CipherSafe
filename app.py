@@ -1,12 +1,17 @@
 from __future__ import annotations
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, send_from_directory
 
 from crypto import encrypt_message, decrypt_message
 from database import add_operation, get_operations, clear_operations
 
-app = Flask(__name__, template_folder="templates", static_folder="static")
+app = Flask(__name__, template_folder="templates", static_folder=None)
 app.config["MAX_CONTENT_LENGTH"] = 64 * 1024  # Limit request size to 64 KB
+
+
+@app.get("/static/<path:filename>")
+def static_files(filename: str):
+    return send_from_directory("public/static", filename)
 
 
 def log_operation(operation_type: str, algorithm: str, message_length: int, status: str) -> None:

@@ -24,22 +24,17 @@
    PowerShell: `.venv\Scripts\Activate.ps1`
 5. Install packages:
    `python -m pip install -r requirements.txt`
-6. Move your four HTML files into `templates/`.
-7. Move your existing `css/`, `js/`, and `assets/` folders into `static/`.
-8. Update asset paths in HTML, for example:
-   - `href="css/style.css"` -> `href="{{ url_for('static', filename='css/style.css') }}"`
-   - `src="js/encrypt.js"` -> `src="{{ url_for('static', filename='js/encrypt.js') }}"`
-   - `src="assets/LOGO.png"` -> `src="{{ url_for('static', filename='assets/LOGO.png') }}"`
-   Do this for every CSS/JS/image path.
-9. Load each script only once. Encrypt page: `encrypt.js` + shared `script.js`; decrypt page: `decrypt.js` + shared `script.js`; history page: `history.js` + shared `script.js`.
-10. Start locally with `python app.py` and open `http://127.0.0.1:5000/`. Do not open the HTML directly using `file://`.
+6. The HTML pages are in `templates/`; frontend assets are in `public/static/`. Keep asset URLs rooted at `/static/`.
+7. Start locally with `python app.py` and open `http://127.0.0.1:5000/`. Do not open the HTML directly using `file://`.
 
 ## 3. Configure Vercel
 Add these environment variables in **Vercel Project > Settings > Environment Variables** for Development, Preview, and Production as needed:
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
 
-Redeploy after changing environment variables. Do not commit `.env`. The `.gitignore` file in this starter excludes it. Vercel's Flask/static-file deployment setup may need additional configuration when you integrate the complete frontend; verify the live deployment after connecting your Git repository.
+Import this repository into Vercel and deploy it with the default project settings. Vercel detects the root `app.py` Flask app and serves files in `public/`; no `vercel.json` is needed. The Python version is pinned in `.python-version`.
+
+The Supabase variables are required for operation history. Run `supabase_schema.sql` in the Supabase SQL Editor before using the history endpoints. Redeploy after changing environment variables. Do not commit `.env`; it is excluded by `.gitignore`.
 
 ## 4. RSA key pair
 Run `python generate_rsa_keys.py`. It creates `rsa_public.pem` and `rsa_private.pem`. Paste the public key into Encrypt and the matching private key into Decrypt. Keep the private key secret and never commit it to GitHub.
