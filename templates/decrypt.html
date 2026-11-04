@@ -110,8 +110,8 @@
           <div class="form-group">
             <label for="ciphertextInput" class="form-label">Ciphertext</label>
             <div class="textarea-wrapper">
-              <textarea id="ciphertextInput" placeholder="Enter encrypted text here..." maxlength="1000"></textarea>
-              <span class="char-count" id="charCount">0/1000</span>
+              <textarea id="ciphertextInput" placeholder="Enter encrypted text here..." maxlength="12000"></textarea>
+              <span class="char-count" id="charCount">0/12000</span>
             </div>
           </div>
 
@@ -133,7 +133,7 @@
 
           <div class="form-group">
             <label for="keyInput" class="form-label">
-              Key <span class="label-note">(required for AES, optional for others)</span>
+              Key <span class="label-note">(required for all algorithms; RSA needs the matching private key)</span>
             </label>
             <div class="input-wrapper">
               <input type="password" id="keyInput" placeholder="Enter decryption key...">

@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (ciphertextInput && charCount) {
     const updateCharacterCount = () => {
       charCount.textContent =
-        `${ciphertextInput.value.length}/1000`;
+        `${ciphertextInput.value.length}/12000`;
     };
 
     ciphertextInput.addEventListener(
