@@ -4,6 +4,7 @@ import base64
 import json
 import os
 import hmac
+import re
 
 from Crypto.Cipher import AES, DES3, PKCS1_OAEP
 from Crypto.Hash import SHA256
@@ -94,6 +95,20 @@ def _parse_package(text: str, expected_algorithm: str) -> dict:
     return package
 
 
+def _import_rsa_key(key_text: str):
+    match = re.fullmatch(
+        r"-----BEGIN ([A-Z0-9 ]+)-----\s*(.*?)\s*-----END \1-----",
+        key_text.strip(),
+        re.DOTALL,
+    )
+    if match:
+        label, body = match.groups()
+        body = "".join(body.split())
+        pem_body = "\n".join(body[index:index + 64] for index in range(0, len(body), 64))
+        key_text = f"-----BEGIN {label}-----\n{pem_body}\n-----END {label}-----"
+    return RSA.import_key(key_text)
+
+
 def _aes_encrypt(text: str, passphrase: str) -> str:
     salt = get_random_bytes(16)
     key = _derive(passphrase, salt, 32)
@@ -165,7 +180,7 @@ def _rsa_encrypt(text: str, public_key_text: str) -> str:
     if not public_key_text.strip():
         raise ValueError("For RSA encryption, paste a PEM public key into the Key field.")
     try:
-        public_key = RSA.import_key(public_key_text)
+        public_key = _import_rsa_key(public_key_text)
         if public_key.has_private():
             public_key = public_key.public_key()
         cipher = PKCS1_OAEP.new(public_key, hashAlgo=SHA256)
@@ -189,7 +204,7 @@ def _rsa_decrypt(text: str, private_key_text: str) -> str:
         raise ValueError("For RSA decryption, paste the matching PEM private key into the Key field.")
     package = _parse_package(text, "RSA")
     try:
-        private_key = RSA.import_key(private_key_text)
+        private_key = _import_rsa_key(private_key_text)
         if not private_key.has_private():
             raise ValueError("RSA decryption requires a private key, not a public key.")
         cipher = PKCS1_OAEP.new(private_key, hashAlgo=SHA256)
