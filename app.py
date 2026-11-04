@@ -3,7 +3,12 @@ from __future__ import annotations
 from flask import Flask, jsonify, render_template, request, send_from_directory
 
 from crypto import encrypt_message, decrypt_message
-from database import add_operation, get_operations, clear_operations
+from database import (
+    SupabaseConfigurationError,
+    add_operation,
+    get_operations,
+    clear_operations,
+)
 
 app = Flask(__name__, template_folder="templates", static_folder=None)
 app.config["MAX_CONTENT_LENGTH"] = 64 * 1024  # Limit request size to 64 KB
@@ -14,12 +19,18 @@ def static_files(filename: str):
     return send_from_directory("public/static", filename)
 
 
-def log_operation(operation_type: str, algorithm: str, message_length: int, status: str) -> None:
+def log_operation(operation_type: str, algorithm: str, message_length: int, status: str) -> bool:
     """Log history failures without hiding a successful crypto result."""
     try:
         add_operation(operation_type, algorithm, message_length, status)
+        return True
     except Exception:
         app.logger.exception("Could not save operation metadata to Supabase")
+        return False
+
+
+def history_warning() -> str:
+    return "Operation succeeded, but its history could not be saved. Check the Supabase configuration in Vercel."
 
 
 @app.get("/")
@@ -52,10 +63,17 @@ def api_encrypt():
 
     try:
         result = encrypt_message(text, algorithm, key)
-        log_operation("Encrypt", algorithm, len(text), "Success")
+        history_saved = log_operation("Encrypt", algorithm, len(text), "Success")
         response = {"result": result}
+        if not history_saved:
+            response["warning"] = history_warning()
         if algorithm.strip().upper() == "3DES":
-            response["warning"] = "3DES is a legacy algorithm and is not recommended for real-world security."
+            legacy_warning = "3DES is a legacy algorithm and is not recommended for real-world security."
+            response["warning"] = (
+                f"{response['warning']} {legacy_warning}"
+                if "warning" in response
+                else legacy_warning
+            )
         return jsonify(response)
     except ValueError as exc:
         log_operation("Encrypt", algorithm or "Unknown", len(text), "Failed")
@@ -82,8 +100,11 @@ def api_decrypt():
 
     try:
         result = decrypt_message(text, algorithm, key)
-        log_operation("Decrypt", algorithm, len(text), "Success")
-        return jsonify({"result": result})
+        history_saved = log_operation("Decrypt", algorithm, len(text), "Success")
+        response = {"result": result}
+        if not history_saved:
+            response["warning"] = history_warning()
+        return jsonify(response)
     except ValueError as exc:
         log_operation("Decrypt", algorithm or "Unknown", len(text), "Failed")
         return jsonify({"error": str(exc)}), 400
@@ -98,6 +119,9 @@ def api_history():
     try:
         records = get_operations()
         return jsonify({"records": records})
+    except SupabaseConfigurationError as exc:
+        app.logger.error("Could not load history: %s", exc)
+        return jsonify({"error": str(exc)}), 503
     except Exception:
         app.logger.exception("Could not load history")
         return jsonify({"error": "Could not load operation history."}), 500
@@ -112,6 +136,9 @@ def api_clear_history():
     try:
         clear_operations(operation_type)
         return jsonify({"message": "History cleared."})
+    except SupabaseConfigurationError as exc:
+        app.logger.error("Could not clear history: %s", exc)
+        return jsonify({"error": str(exc)}), 503
     except Exception:
         app.logger.exception("Could not clear history")
         return jsonify({"error": "Could not clear operation history."}), 500

@@ -13,14 +13,19 @@ load_dotenv()
 TABLE_NAME = "operations"
 
 
+class SupabaseConfigurationError(RuntimeError):
+    """Raised when the Supabase server credentials are not configured."""
+
+
 @lru_cache(maxsize=1)
 def _client() -> Client:
     url = os.getenv("SUPABASE_URL", "").strip()
     key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
     if not url or not key:
-        raise RuntimeError(
+        raise SupabaseConfigurationError(
             "Supabase is not configured. Set SUPABASE_URL and "
-            "SUPABASE_SERVICE_ROLE_KEY in your local .env file or deployment environment."
+            "SUPABASE_SERVICE_ROLE_KEY in Vercel Project Settings > Environment Variables, "
+            "then redeploy."
         )
     return create_client(url, key)
 

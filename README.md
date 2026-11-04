@@ -44,5 +44,5 @@ Run `python generate_rsa_keys.py`. It creates `rsa_public.pem` and `rsa_private.
 - Plaintext, ciphertext, and keys are not written to the database.
 - The history page can load, search, paginate, show details, and clear stored operation metadata.
 - This starter has no user accounts, so history is shared across visitors and the clear-history endpoint clears the shared table. Add authentication/authorization before using it for a public multi-user deployment.
-- The backend logs a history-write error to the server log if Supabase is not configured or unavailable; the encryption result itself is not falsely reported as a crypto failure. The History API will return an error if it cannot read from Supabase.
+- If a history write fails, the backend logs the error and the encrypt/decrypt response warns that metadata was not saved; the crypto result itself is still returned. If Supabase credentials are missing, the History API gives setup instructions. Other history API failures are logged and returned as errors.
 - The starter is for an educational project, not a production-hardened security product. 3DES is deprecated; prefer AES for real applications.
